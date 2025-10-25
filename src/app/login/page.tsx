@@ -11,6 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase/auth/use-user';
+import { Separator } from '@/components/ui/separator';
+
+const testAccounts = [
+  { email: 'admin1@gmail.com', role: 'Admin' },
+  { email: 'org1@gmail.com', role: 'Organizer' },
+  { email: 'user1@gmail.com', role: 'Audience' },
+];
 
 export default function LoginPage() {
   const [loginEmail, setLoginEmail] = useState('');
@@ -57,6 +64,11 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTestAccountClick = (email: string) => {
+    setLoginEmail(email);
+    setLoginPassword('@12345');
   };
 
   if (userLoading || user) {
@@ -133,6 +145,22 @@ export default function LoginPage() {
           </form>
         </TabsContent>
       </Tabs>
+        <Card className="w-[400px] mt-4">
+            <CardHeader>
+                <CardTitle className="text-base">Test Accounts</CardTitle>
+                <CardDescription>Click an account to pre-fill credentials. Password for all is: <strong>@12345</strong></CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+                <ul className="divide-y">
+                    {testAccounts.map((account) => (
+                        <li key={account.email} className="px-6 py-3 cursor-pointer hover:bg-muted" onClick={() => handleTestAccountClick(account.email)}>
+                            <p className="font-medium text-sm">{account.email}</p>
+                            <p className="text-xs text-muted-foreground">{account.role}</p>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
     </div>
   );
 }

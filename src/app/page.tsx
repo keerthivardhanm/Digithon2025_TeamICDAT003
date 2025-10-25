@@ -13,7 +13,7 @@ export default function HomePage() {
     if (!loading) {
       if (user) {
         // If claims are still loading, don't redirect yet
-        if (!customClaims && loading) return;
+        if (customClaims === null) return;
 
         switch (customClaims?.role) {
           case 'admin':
@@ -29,11 +29,10 @@ export default function HomePage() {
             router.push('/audience');
             break;
           default:
-            // If role is not set, but user is authenticated, they might need to logout and log back in for claims to update
-            // Or wait for claims. For now, we can redirect to login as a safe fallback.
-            if (customClaims !== undefined) { // customClaims is null when loading, undefined when not present
-                 router.push('/login');
-            }
+            // If role is not set or claims are undefined after loading, go to login.
+            // This can happen if the user was just created and claims are not yet set.
+            // A re-login would typically solve this as claims would be present on the new token.
+            router.push('/login');
             break;
         }
       } else {
