@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/icons';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase/auth/use-user';
 
 export default function LoginPage() {
   const [loginEmail, setLoginEmail] = useState('');
@@ -20,6 +21,11 @@ export default function LoginPage() {
   const { toast } = useToast();
   const auth = getAuth();
   const router = useRouter();
+  const { user, loading: userLoading } = useUser();
+
+  if (user && !userLoading) {
+    router.push('/');
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +56,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (userLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="flex items-center gap-4">
+          <Logo className="size-12 text-primary" />
+          <h1 className="text-4xl font-bold">CrowdSafe 360°</h1>
+        </div>
+        <p className="mt-4 text-lg text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background">
