@@ -44,7 +44,10 @@ export default function HomePage() {
         // This case handles users who are authenticated but have no role claim.
         // This can happen during initial sign-up before claims are set.
         // A re-login after claims are set by an admin would grant them access.
-        router.push('/login');
+        // We will not redirect here to prevent a loop.
+        // In a real app, you might show a "pending approval" message.
+        // For now, we will just show the routing message.
+        // Only redirect to login if the user is truly not authenticated, which is handled above.
         break;
     }
   }, [user, customClaims, loading, router]);
