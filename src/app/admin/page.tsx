@@ -1,3 +1,5 @@
+'use client';
+
 import { MapView } from '@/components/map-view';
 import { KpiCard, DensityChart, SosChart, AiPredictions, AiSummaryGenerator, AppHeader, AppSidebar } from '@/components/dashboard-components';
 import { kpiData } from '@/lib/data';
