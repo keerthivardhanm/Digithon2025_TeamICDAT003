@@ -8,6 +8,7 @@ import {
   Bell,
   Calendar,
   LayoutDashboard,
+  LogOut,
   Map,
   MoreHorizontal,
   Search,
@@ -21,8 +22,8 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, XAxis, YAxis } f
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import type { Kpi, Prediction } from '@/lib/types';
-import { densityChartData, sosChartData, aiPredictionsData } from '@/lib/data';
+import type { Kpi } from '@/lib/types';
+import { aiPredictionsData } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ import { Logo } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase/auth/use-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar';
+import { signOutUser } from '@/firebase/auth';
 
 
 const densityChartConfig = {
@@ -64,15 +66,19 @@ const sosChartConfig = {
 } satisfies ChartConfig
 
 export function AppSidebar() {
-  const { user } = useUser();
+  const { user, customClaims, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    // In a real app, you'd call signOut from Firebase Auth
-    toast({ title: 'Logged Out' });
-    router.push('/login');
+    try {
+        await signOutUser();
+        toast({ title: 'Logged Out' });
+        router.push('/login');
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Logout Failed' });
+    }
   };
 
   const menuItems = [
@@ -84,6 +90,10 @@ export function AppSidebar() {
     { href: '/admin/team', label: 'Team', icon: Users },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
+
+  if (loading) {
+    return <div className="hidden lg:block w-64 border-r bg-card p-4"><p>Loading...</p></div>
+  }
 
   return (
     <Sidebar>
@@ -98,7 +108,7 @@ export function AppSidebar() {
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
-                <SidebarMenuButton isActive={pathname.startsWith(item.href)}>
+                <SidebarMenuButton isActive={pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))}>
                   <item.icon />
                   {item.label}
                 </SidebarMenuButton>
@@ -112,12 +122,12 @@ export function AppSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start gap-2 px-2">
               <Avatar className="size-8">
-                <AvatarImage src={user?.photoURL || "https://i.pravatar.cc/150?u=a042581f4e29026704d"} />
+                <AvatarImage src={user?.photoURL || undefined} />
                 <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start truncate">
-                <span className="font-semibold">{user?.displayName || 'Admin User'}</span>
-                <span className="text-xs text-muted-foreground">Admin</span>
+                <span className="font-semibold">{user?.displayName || user?.email || 'Admin User'}</span>
+                <span className="text-xs text-muted-foreground capitalize">{customClaims?.role || 'Admin'}</span>
               </div>
               <MoreHorizontal className="ml-auto" />
             </Button>
@@ -128,7 +138,9 @@ export function AppSidebar() {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className='mr-2' /> Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
@@ -260,6 +272,15 @@ export function DensityChart({ data }: { data: any[] }) {
 }
 
 export function SosChart() {
+    // In a real app, this would be fetched from Firestore
+    const sosChartData = [
+        { zone: 'A', incidents: 5 },
+        { zone: 'B', incidents: 8 },
+        { zone: 'C', incidents: 12 },
+        { zone: 'D', incidents: 3 },
+        { zone: 'E', incidents: 7 },
+    ];
+    
     return (
         <Card>
             <CardHeader>
@@ -269,7 +290,7 @@ export function SosChart() {
             <CardContent>
                 <ChartContainer config={sosChartConfig} className="h-64 w-full">
                     <BarChart data={sosChartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3-3" />
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis dataKey="zone" tickLine={false} axisLine={false} tickMargin={8} />
                         <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />

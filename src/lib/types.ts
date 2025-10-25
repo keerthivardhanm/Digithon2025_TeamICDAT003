@@ -1,5 +1,6 @@
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
+import type { Timestamp } from 'firebase/firestore';
 
 export type Kpi = {
   title: string;
@@ -26,18 +27,28 @@ export type Prediction = {
 }
 
 export type User = {
-  uid: string;
+  id: string; // Firestore document ID
+  uid: string; // Firebase Auth UID
   name: string;
   email: string;
   role: 'admin' | 'organizer' | 'volunteer' | 'audience';
   assignedZones: string[];
-  avatar: string;
-  // location and status are optional as they might not apply to all roles or be available at all times
+  avatar?: string;
   location?: { 
     lat: number;
     lng: number;
   };
   status?: string;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  description: string;
+  startAt: string;
+  endAt: string;
+  status: 'upcoming' | 'ongoing' | 'completed';
+  createdAt: Timestamp;
 };
 
 export type SubZone = {
@@ -46,8 +57,8 @@ export type SubZone = {
   name: string;
   polygon: { lat: number; lng: number }[];
   area: number;
-  capacity: number;
-  overlay: google.maps.Polygon;
+  capacity?: number;
+  overlay?: google.maps.Polygon;
 };
 
 export type Zone = {
@@ -55,9 +66,9 @@ export type Zone = {
   name: string;
   polygon: { lat: number; lng: number }[];
   area: number;
-  capacity: number;
+  capacity?: number;
   color: string;
-  organizers: string[];
-  overlay: google.maps.Polygon;
-  subZones: Record<string, SubZone>;
+  organizers?: string[];
+  overlay?: google.maps.Polygon;
+  subZones?: Record<string, SubZone>;
 };

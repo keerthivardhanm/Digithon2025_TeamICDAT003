@@ -21,25 +21,24 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
   } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from '@/lib/types';
-
-
-const initialUsers: User[] = [
-    { uid: 'admin-1', name: 'Admin User', email: 'admin@crowdsafe.com', role: 'admin', assignedZones: [], avatar: 'https://i.pravatar.cc/150?u=admin' },
-    { uid: 'org-1', name: 'John Doe', email: 'john.d@example.com', role: 'organizer', assignedZones: ['zone_1678886400000'], avatar: 'https://i.pravatar.cc/150?u=john' },
-    { uid: 'org-2', name: 'Jane Smith', email: 'jane.s@example.com', role: 'organizer', assignedZones: ['zone_1678886400001'], avatar: 'https://i.pravatar.cc/150?u=jane' },
-    { uid: 'vol-1', name: 'Peter Jones', email: 'peter.j@example.com', role: 'volunteer', assignedZones: ['subzone_1678886400002'], avatar: 'https://i.pravatar.cc/150?u=peter' },
-    { uid: 'aud-1', name: 'Audience Member', email: 'audience@example.com', role: 'audience', assignedZones: [], avatar: 'https://i.pravatar.cc/150?u=audience' },
-];
-
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore } from '@/firebase';
+import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { createNewUser } from '@/firebase/auth';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 export default function TeamPage() {
-    const [users, setUsers] = useState<User[]>(initialUsers);
+    useAuthGuard('admin');
+    const firestore = useFirestore();
+    const { data: users, loading } = useCollection<User>(firestore ? collection(firestore, 'users') : null);
+    const { toast } = useToast();
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -53,28 +52,65 @@ export default function TeamPage() {
         setIsDialogOpen(true);
     };
 
-    const handleDeleteUser = (uid: string) => {
-        if(confirm('Are you sure you want to delete this user?')) {
-            setUsers(users.filter(u => u.uid !== uid));
+    const handleDeleteUser = async (uid: string) => {
+        if(confirm('Are you sure you want to delete this user? This cannot be undone.')) {
+            if (!firestore) return;
+            try {
+                await deleteDoc(doc(firestore, 'users', uid));
+                // Note: This only deletes the user from the Firestore collection.
+                // You would need a Firebase Function to delete the user from Firebase Auth.
+                toast({ title: "User deleted successfully" });
+            } catch (error) {
+                console.error("Error deleting user: ", error);
+                toast({ variant: 'destructive', title: "Error deleting user", description: "See console for details." });
+            }
         }
     };
     
-    const handleSaveUser = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!firestore) return;
+
         const formData = new FormData(e.currentTarget);
-        const userData = Object.fromEntries(formData.entries()) as any;
+        const name = formData.get('name') as string;
+        const email = formData.get('email') as string;
+        const role = formData.get('role') as User['role'];
+        const password = formData.get('password') as string;
+        const assignedZones = (formData.get('assignedZones') as string).split(',').map(s => s.trim()).filter(Boolean);
         
-        if (editingUser) {
-            // Update existing user
-            const updatedUser = { ...editingUser, ...userData, uid: editingUser.uid };
-            setUsers(users.map(u => u.uid === editingUser.uid ? updatedUser : u));
-        } else {
-            // Add new user
-            const newUser = { ...userData, uid: `user-${Date.now()}` } as User;
-            setUsers([...users, newUser]);
+        try {
+            if (editingUser) {
+                // Update existing user document in Firestore
+                const userRef = doc(firestore, 'users', editingUser.id);
+                await setDoc(userRef, { name, email, role, assignedZones }, { merge: true });
+                toast({ title: "User updated successfully" });
+            } else {
+                // Create new user in Firebase Auth and Firestore
+                if (!password) {
+                    toast({ variant: 'destructive', title: 'Password is required for new users' });
+                    return;
+                }
+                const authUser = await createNewUser(email, password);
+                if (authUser) {
+                    const userRef = doc(firestore, 'users', authUser.uid);
+                    await setDoc(userRef, {
+                        id: authUser.uid,
+                        uid: authUser.uid,
+                        name,
+                        email,
+                        role,
+                        assignedZones,
+                        avatar: `https://i.pravatar.cc/150?u=${authUser.uid}`
+                    });
+                    toast({ title: "User created successfully" });
+                }
+            }
+            setIsDialogOpen(false);
+            setEditingUser(null);
+        } catch (error: any) {
+            console.error("Error saving user:", error);
+            toast({ variant: 'destructive', title: 'Error saving user', description: error.message });
         }
-        setIsDialogOpen(false);
-        setEditingUser(null);
     };
 
   return (
@@ -108,6 +144,7 @@ export default function TeamPage() {
                                     <span className="sr-only">Avatar</span>
                                 </TableHead>
                                 <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead className="hidden md:table-cell">Assigned Zones</TableHead>
                                 <TableHead>
@@ -116,19 +153,25 @@ export default function TeamPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                           {users.map(user => (
-                             <TableRow key={user.uid}>
+                           {loading ? (
+                             <TableRow>
+                               <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                             </TableRow>
+                           ) : (
+                             users.map(user => (
+                             <TableRow key={user.id}>
                                 <TableCell className="hidden sm:table-cell">
                                     <UserIcon className="h-10 w-10 text-muted-foreground rounded-full bg-muted p-2" />
                                 </TableCell>
                                 <TableCell className="font-medium">{user.name}</TableCell>
+                                <TableCell>{user.email}</TableCell>
                                 <TableCell>
                                     <Badge variant={user.role === 'admin' ? 'default' : (user.role === 'organizer' ? 'secondary' : 'outline')}>
                                         {user.role}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">
-                                    {user.assignedZones.join(', ') || 'N/A'}
+                                    {user.assignedZones?.join(', ') || 'N/A'}
                                 </TableCell>
                                 <TableCell>
                                     <DropdownMenu>
@@ -141,12 +184,12 @@ export default function TeamPage() {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem onClick={() => handleEditUser(user)}>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDeleteUser(user.uid)}>Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDeleteUser(user.id)}>Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
                             </TableRow>
-                           ))}
+                           )))}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -174,8 +217,14 @@ export default function TeamPage() {
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="email" className="text-right">Email</Label>
-                            <Input id="email" name="email" type="email" defaultValue={editingUser?.email || ''} className="col-span-3" required />
+                            <Input id="email" name="email" type="email" defaultValue={editingUser?.email || ''} className="col-span-3" required disabled={!!editingUser} />
                         </div>
+                        {!editingUser && (
+                           <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="password" className="text-right">Password</Label>
+                                <Input id="password" name="password" type="password" className="col-span-3" required />
+                            </div>
+                        )}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="role" className="text-right">Role</Label>
                             <Select name="role" defaultValue={editingUser?.role || 'volunteer'}>
@@ -192,7 +241,7 @@ export default function TeamPage() {
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="assignedZones" className="text-right">Zones</Label>
-                            <Input id="assignedZones" name="assignedZones" defaultValue={editingUser?.assignedZones.join(',') || ''} className="col-span-3" placeholder="Comma-separated zone IDs"/>
+                            <Input id="assignedZones" name="assignedZones" defaultValue={editingUser?.assignedZones?.join(',') || ''} className="col-span-3" placeholder="Comma-separated zone IDs"/>
                         </div>
                     </div>
                     <DialogFooter>
