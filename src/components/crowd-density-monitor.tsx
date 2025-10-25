@@ -194,7 +194,7 @@ export function CrowdDensityMonitor() {
 
                 const rate = (p - prevPeopleRef.current[k]) / (zoneData.area * dtSec);
                 const rawIntensity = d * (1 + INTENSITY_SCALE * Math.abs(rate));
-                const it = (SMOOTH_ALPHA * rawIntensity) + ((1 - SMOOOTH_ALPHA) * (smoothIntensityRef.current[k] || 0));
+                const it = (SMOOTH_ALPHA * rawIntensity) + ((1 - SMOOTH_ALPHA) * (smoothIntensityRef.current[k] || 0));
                 smoothIntensityRef.current[k] = it;
 
                 const bgColor = intensityToColor(it);
