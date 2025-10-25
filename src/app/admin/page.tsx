@@ -2,11 +2,9 @@
 
 import { AppHeader, AppSidebar } from '@/components/dashboard-components';
 import { KpiCard, DensityChart, SosChart, AiPredictions, AiSummaryGenerator } from '@/components/dashboard-components';
-import { ReadOnlyMap } from '@/components/read-only-map';
+import { MapView } from '@/components/map-view';
 import { kpiData } from '@/lib/data';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 export default function AdminDashboard() {
   return (
@@ -21,22 +19,19 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-6">
              <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                    <CardTitle>Live Event Overview</CardTitle>
-                    <CardDescription>Real-time satellite view of the event grounds. Zone editing and live metrics are in the 'Zones' section.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-[50vh] w-full rounded-md bg-muted flex items-center justify-center flex-col gap-4">
-                      <p className="text-muted-foreground">Read-only map placeholder.</p>
-                       <Link href="/admin/zones">
-                        <Button>Go to Zone Command Center</Button>
-                      </Link>
-                    </div>
-                </CardContent>
-              </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Live Event Command Center</CardTitle>
+                        <CardDescription>
+                            Use the tools on the map to draw, edit, and manage event zones. Monitor live crowd data and run simulations.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <MapView />
+                    </CardContent>
+                </Card>
             </div>
           </div>
 

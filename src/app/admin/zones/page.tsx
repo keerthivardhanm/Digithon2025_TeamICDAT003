@@ -1,7 +1,6 @@
 'use client';
 
 import { AppHeader, AppSidebar } from '@/components/dashboard-components';
-import { MapView } from '@/components/map-view';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 export default function ZonesPage() {
@@ -13,13 +12,15 @@ export default function ZonesPage() {
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>Zone Command Center</CardTitle>
+                    <CardTitle>Zone Configuration</CardTitle>
                     <CardDescription>
-                        Use the tools on the map to draw, edit, and manage event zones. Monitor live crowd data and run simulations.
+                        This section is for detailed zone settings and management.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <MapView />
+                     <div className="h-[70vh] w-full rounded-md bg-muted flex items-center justify-center">
+                        <p className="text-muted-foreground">Detailed zone configuration components will be displayed here.</p>
+                     </div>
                 </CardContent>
             </Card>
         </main>
