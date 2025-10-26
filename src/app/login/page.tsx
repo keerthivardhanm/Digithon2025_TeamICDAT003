@@ -9,16 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmail, signUpWithEmail } from '@/firebase/auth';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
-type Role = 'admin' | 'organizer' | 'audience';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [role, setRole] = useState<Role>('admin');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,19 +26,17 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // In a real app, you'd want to separate sign-up logic, maybe admin-only
         await signUpWithEmail(email, password);
         toast({
           title: "Sign-up successful!",
           description: "Please log in with your new account.",
         });
-        setIsSignUp(false); // Switch to login view
+        setIsSignUp(false);
       } else {
         const user = await signInWithEmail(email, password);
         if (user) {
           toast({ title: 'Login Successful' });
-          // Redirect based on selected role for demo purposes
-          router.push(`/${role}`);
+          setIsAuthenticated(true);
         }
       }
     } catch (error: any) {
@@ -56,17 +51,41 @@ export default function LoginPage() {
     }
   };
 
+  if (isAuthenticated) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Login Successful</CardTitle>
+            <CardDescription>Select a dashboard to view.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Button size="lg" className="w-full" onClick={() => router.push('/admin')}>
+              Go to Admin Dashboard
+            </Button>
+            <Button size="lg" className="w-full" variant="secondary" onClick={() => router.push('/organizer')}>
+              Go to Organizer Dashboard
+            </Button>
+            <Button size="lg" className="w-full" variant="outline" onClick={() => router.push('/audience')}>
+              Go to Audience Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="absolute top-8 left-8 flex items-center gap-2">
-        <Logo className="size-8 text-foreground" />
-        <h1 className="text-xl font-semibold">Flow-Track</h1>
+        <Logo className="size-8 text-primary" />
+        <h1 className="text-xl font-semibold">CrowdSafe 360°</h1>
       </div>
       <Card className="w-full max-w-md shadow-2xl">
         <form onSubmit={handleSubmit}>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">{isSignUp ? 'Create an Account' : 'Welcome Back!'}</CardTitle>
-            <CardDescription>{isSignUp ? 'Enter your details to create an account' : 'Log in to access your dashboard'}</CardDescription>
+            <CardDescription>{isSignUp ? 'Enter your details to create an account' : 'Log in to access the platform'}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="grid w-full items-center gap-1.5">
@@ -80,29 +99,6 @@ export default function LoginPage() {
             <Button type="submit" size="lg" disabled={loading}>
               {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Log In')}
             </Button>
-            <div className="pt-4">
-                <Label className="text-sm font-medium">Select Role to View As</Label>
-                <RadioGroup defaultValue="admin" className="grid grid-cols-2 gap-4 pt-2" onValueChange={(value: Role) => setRole(value)}>
-                    <div>
-                        <RadioGroupItem value="admin" id="admin" className="peer sr-only" />
-                        <Label htmlFor="admin" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                            Admin
-                        </Label>
-                    </div>
-                     <div>
-                        <RadioGroupItem value="organizer" id="organizer" className="peer sr-only" />
-                        <Label htmlFor="organizer" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                            Organizer
-                        </Label>
-                    </div>
-                     <div>
-                        <RadioGroupItem value="audience" id="audience" className="peer sr-only" />
-                        <Label htmlFor="audience" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                            Audience
-                        </Label>
-                    </div>
-                </RadioGroup>
-            </div>
           </CardContent>
           <CardFooter className="flex justify-center">
              <Button variant="link" type="button" onClick={() => setIsSignUp(!isSignUp)}>
@@ -112,7 +108,7 @@ export default function LoginPage() {
         </form>
       </Card>
       <p className="absolute bottom-4 text-xs text-muted-foreground">
-        Copyright © Flow-Track 2024 | Privacy Policy
+        Copyright © CrowdSafe 360° 2024 | Privacy Policy
       </p>
     </div>
   );

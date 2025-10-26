@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Flow-Track',
+  title: 'CrowdSafe 360°',
   description: 'An AI-powered, real-time, geolocation-based event safety and crowd management platform for large-scale gatherings.',
 };
 
