@@ -93,8 +93,39 @@
         "name": {
           "type": "string"
         },
-        "polygonGeoJSON": {
-          "type": "string"
+        "polygon": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number"},
+                    "lng": {"type": "number"}
+                }
+            }
+        },
+        "subzones": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "name": {"type": "string"},
+                    "polygon": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "lat": {"type": "number"},
+                                "lng": {"type": "number"}
+                            }
+                        }
+                    },
+                    "volunteers": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                }
+            }
         },
         "capacity": {
           "type": "number"
@@ -110,24 +141,9 @@
         "intensity": {
           "type": "number",
           "description": "A calculated metric for crowd activity level."
-        },
-        "colorCode": {
-          "type": "string"
-        },
-        "volunteers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "organizers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       },
-      "required": ["eventId", "name", "capacity"]
+      "required": ["eventId", "name", "polygon"]
     },
     "alert": {
       "title": "Alert",

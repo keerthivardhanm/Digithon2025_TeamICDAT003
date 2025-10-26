@@ -35,7 +35,7 @@ export type User = {
   name: string;
   email: string;
   role: 'admin' | 'organizer' | 'volunteer' | 'audience';
-  assignedZones: string[];
+  assignedZones?: string[];
   eventId?: string;
   avatar?: string;
   location?: { 
@@ -55,16 +55,25 @@ export type Event = {
   createdAt: Timestamp;
 };
 
+export type LatLngLiteral = {
+    lat: number;
+    lng: number;
+}
+
+export type SubZone = {
+    id: string;
+    name: string;
+    polygon: LatLngLiteral[];
+    volunteers?: string[];
+}
+
 export type Zone = {
   id: string;
   name: string;
   eventId: string;
-  polygon: { lat: number; lng: number }[];
-  area: number;
+  polygon: LatLngLiteral[];
+  subzones?: SubZone[];
   capacity?: number;
-  color: string;
-  organizers?: string[];
-  overlay?: google.maps.Polygon;
   currentCount?: number;
   density?: number;
   intensity?: number;

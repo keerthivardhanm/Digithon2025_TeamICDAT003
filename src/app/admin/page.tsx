@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { AppHeader, AppSidebar } from '@/components/dashboard-components';
 import { KpiCard, DensityChart, AiPredictions, AiSummaryGenerator } from '@/components/dashboard-components';
-import { MapView } from '@/components/map-view';
+import { ReadOnlyMap } from '@/components/read-only-map';
 import { CrowdDensityMonitor, type ZoneDensityData } from '@/components/crowd-density-monitor';
 import { kpiData } from '@/lib/data';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
@@ -112,17 +112,7 @@ export default function AdminDashboard() {
 
           <div className="mt-6 grid grid-cols-1 gap-6">
              <div className="lg:col-span-3">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Live Event Command Center</CardTitle>
-                        <CardDescription>
-                            Use the tools on the map to draw, edit, and manage event zones. Monitor live crowd data and run simulations.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <MapView />
-                    </CardContent>
-                </Card>
+                <ReadOnlyMap />
             </div>
           </div>
 
