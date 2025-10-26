@@ -1,6 +1,6 @@
+
 'use client';
 import { AppHeader, AppSidebar } from '@/components/dashboard-components';
-import { ZoneMapEditor } from '@/components/zones/zone-map-editor';
 
 export default function ZonesPage() {
   return (
@@ -9,7 +9,7 @@ export default function ZonesPage() {
       <div className="flex flex-1 flex-col">
         <AppHeader />
         <main className="flex-1 overflow-y-auto">
-           <ZoneMapEditor />
+           <iframe src="/zones-map.html" style={{ width: '100%', height: 'calc(100vh - 56px)', border: 'none' }} />
         </main>
       </div>
     </div>
