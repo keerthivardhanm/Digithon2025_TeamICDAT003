@@ -5,6 +5,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "sosReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "resolved",
           "order": "ASCENDING"
         },
