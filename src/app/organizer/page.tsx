@@ -1,27 +1,32 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, Bell, MessageSquare, QrCode, ShieldCheck, Users, MapPin, Siren, CheckCircle } from "lucide-react";
+import { BarChart, Bell, MessageSquare, QrCode, ShieldCheck, Users, MapPin, Siren, CheckCircle, Video } from "lucide-react";
 import { useUser } from "@/firebase/auth/use-user";
 import { useFirestore } from "@/firebase";
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, doc, updateDoc, orderBy } from 'firebase/firestore';
-import type { User, SOSReport } from "@/lib/types";
+import type { User as AppUser, SOSReport } from "@/lib/types"; // Renamed to avoid conflict with `useUser`'s `User`
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { useMemo } from "react";
 
 function OrganizerSosAlertFeed({ assignedZones }: { assignedZones: string[] }) {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const sosQuery = (firestore && assignedZones?.length) ? query(
-    collection(firestore, 'sosReports'),
-    where('status', '==', 'dispatched'),
-    where('zoneId', 'in', assignedZones),
-    orderBy('timestamp', 'desc')
-  ) : null;
+  const sosQuery = useMemo(() => {
+    if (!firestore || !assignedZones || assignedZones.length === 0) return null;
+    return query(
+        collection(firestore, 'sosReports'),
+        where('status', '==', 'dispatched'),
+        where('zoneId', 'in', assignedZones),
+        orderBy('timestamp', 'desc')
+      )
+  }, [firestore, assignedZones]);
 
   const { data: sosReports, loading } = useCollection<SOSReport>(sosQuery);
 
@@ -88,21 +93,30 @@ function OrganizerSosAlertFeed({ assignedZones }: { assignedZones: string[] }) {
 export default function OrganizerDashboard() {
   const { user: authUser } = useUser();
   const firestore = useFirestore();
-  const { data: organizer, loading: userLoading } = useDoc<User>(authUser ? doc(firestore!, 'users', authUser.uid) : null);
-  const assignedZones = organizer?.assignedZones || [];
 
-  const volunteersQuery = (firestore && assignedZones.length) ? query(
-    collection(firestore, 'users'),
-    where('role', '==', 'volunteer'),
-    where('assignedZones', 'array-contains-any', assignedZones)
-  ) : null;
-  const { data: volunteers, loading: volunteersLoading } = useCollection<User>(volunteersQuery);
+  const userDocRef = useMemo(() => authUser ? doc(firestore!, 'users', authUser.uid) : null, [authUser, firestore]);
+  const { data: organizer, loading: userLoading } = useDoc<AppUser>(userDocRef);
+  
+  const assignedZones = useMemo(() => organizer?.assignedZones || [], [organizer]);
 
-  const dispatchedSosQuery = (firestore && assignedZones.length) ? query(
-    collection(firestore, 'sosReports'),
-    where('status', '==', 'dispatched'),
-    where('zoneId', 'in', assignedZones)
-  ) : null;
+  const volunteersQuery = useMemo(() => {
+    if (!firestore || !assignedZones || assignedZones.length === 0) return null;
+    return query(
+      collection(firestore, 'users'),
+      where('role', '==', 'volunteer'),
+      where('assignedZones', 'array-contains-any', assignedZones)
+    )
+  }, [firestore, assignedZones]);
+  const { data: volunteers, loading: volunteersLoading } = useCollection<AppUser>(volunteersQuery);
+
+  const dispatchedSosQuery = useMemo(() => {
+    if (!firestore || !assignedZones || assignedZones.length === 0) return null;
+    return query(
+      collection(firestore, 'sosReports'),
+      where('status', '==', 'dispatched'),
+      where('zoneId', 'in', assignedZones)
+    )
+  }, [firestore, assignedZones]);
   const { data: activeAlerts, loading: alertsLoading } = useCollection<SOSReport>(dispatchedSosQuery);
 
   const totalPeopleInZones = 1204; // This should be derived from live zone data
@@ -166,29 +180,35 @@ export default function OrganizerDashboard() {
                   <CardDescription>Quick access to essential organizer functions.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                  <Button variant="outline" className="h-20 flex-col gap-1">
-                    <QrCode className="h-6 w-6" />
-                    <span>Scan Tickets</span>
+                  <Button asChild variant="outline" className="h-20 flex-col gap-1">
+                    <Link href="/organizer/raise-ticket">
+                      <ShieldCheck className="h-6 w-6" />
+                      <span>Raise Ticket</span>
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-20 flex-col gap-1">
+                    <Link href="/organizer/chat">
+                      <MessageSquare className="h-6 w-6" />
+                      <span>Team Chat</span>
+                    </Link>
                   </Button>
                   <Button variant="outline" className="h-20 flex-col gap-1">
-                    <Bell className="h-6 w-6" />
-                    <span>Manage Alerts</span>
-                  </Button>
-                   <Button variant="outline" className="h-20 flex-col gap-1">
-                    <MessageSquare className="h-6 w-6" />
-                    <span>Team Chat</span>
-                  </Button>
-                   <Button variant="outline" className="h-20 flex-col gap-1">
-                    <ShieldCheck className="h-6 w-6" />
-                    <span>Raise Ticket</span>
-                  </Button>
-                   <Button variant="outline" className="h-20 flex-col gap-1">
                     <Users className="h-6 w-6" />
                     <span>View Volunteers</span>
                   </Button>
-                   <Button variant="outline" className="h-20 flex-col gap-1">
-                    <MapPin className="h-6 w-6" />
-                    <span>My Zone Maps</span>
+                  <Button asChild variant="outline" className="h-20 flex-col gap-1">
+                    <Link href="/organizer/camera-feed">
+                      <Video className="h-6 w-6" />
+                      <span>Camera Feed</span>
+                    </Link>
+                  </Button>
+                   <Button variant="outline" className="h-20 flex-col gap-1" disabled>
+                    <Bell className="h-6 w-6" />
+                    <span>Manage Alerts</span>
+                  </Button>
+                   <Button variant="outline" className="h-20 flex-col gap-1" disabled>
+                    <QrCode className="h-6 w-6" />
+                    <span>Scan Tickets</span>
                   </Button>
                 </CardContent>
               </Card>
